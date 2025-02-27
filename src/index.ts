@@ -22,7 +22,7 @@ const server = new McpServer({
 
 // Add a search tool
 server.tool(
-  'search-sumologic',
+  'search_sumologic',
   {
     query: z.string(),
     from: z.string().optional(),
