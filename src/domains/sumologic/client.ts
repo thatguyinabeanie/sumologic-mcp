@@ -1,5 +1,6 @@
 import moment from 'moment';
 import * as Sumo from '@/lib/sumologic/client.js';
+import { maskSensitiveInfo } from '@/utils/pii.js';
 
 export interface SearchResult {
   messages: any[];
@@ -53,22 +54,76 @@ export async function search(
 
     // Get results
     const [messages] = await Promise.all([client.messages(id)]);
-    console.log(messages);
 
     // Cleanup
     await client.delete(id);
 
-    // Ensure messages are properly formatted for JSON serialization
-    const sanitizedMessages = messages.messages.map((message) => {
+    // Ensure messages are properly formatted for JSON serialization and filter PII
+    const sanitizedMessages = messages.messages.map((message: any) => {
       // Convert message.map to a plain object if it exists
       if (message.map && typeof message.map === 'object') {
         const plainMap: Record<string, string> = {};
         Object.keys(message.map).forEach((key) => {
           // Ensure values are strings and handle potential undefined values
-          plainMap[key] = message.map[key]?.toString() || '';
+          const rawValue = message.map[key]?.toString() || '';
+
+          // Only apply PII masking to _raw and response fields
+          if (key === '_raw' || key === 'response') {
+            plainMap[key] = maskSensitiveInfo(rawValue);
+          } else {
+            plainMap[key] = rawValue;
+          }
         });
-        return { map: plainMap };
+
+        // Also mask the _raw property if it exists at the top level
+        const maskedRaw = message._raw
+          ? maskSensitiveInfo(message._raw.toString())
+          : undefined;
+
+        return {
+          ...message,
+          map: plainMap,
+          _raw: maskedRaw,
+        };
       }
+
+      // If message has a _raw property (contains raw log text)
+      if (message._raw && typeof message._raw === 'string') {
+        return {
+          ...message,
+          _raw: maskSensitiveInfo(message._raw),
+        };
+      }
+
+      // If message has a response property
+      if (message.response && typeof message.response === 'string') {
+        return {
+          ...message,
+          response: maskSensitiveInfo(message.response),
+        };
+      }
+
+      // If message is a string, don't apply PII masking
+      if (typeof message === 'string') {
+        return message;
+      }
+
+      // If message is an object, only filter _raw and response fields
+      if (typeof message === 'object' && message !== null) {
+        const result = { ...message };
+
+        if (result._raw && typeof result._raw === 'string') {
+          result._raw = maskSensitiveInfo(result._raw);
+        }
+
+        if (result.response && typeof result.response === 'string') {
+          result.response = maskSensitiveInfo(result.response);
+        }
+
+        return result;
+      }
+
+      // For other message formats, return as is
       return message;
     });
 
@@ -76,9 +131,6 @@ export async function search(
       messages: sanitizedMessages,
     };
   } catch (error) {
-    const apiError = error as SumoAPIError;
-    console.error('Error in search operation:', apiError.message);
-
     return {
       messages: [],
     };
