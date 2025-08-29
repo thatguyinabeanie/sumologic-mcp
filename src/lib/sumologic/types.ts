@@ -4,6 +4,103 @@ import type {
   RequestPromiseOptions,
 } from 'request-promise-native';
 
+// Sumo Logic Search Job API Types
+// Based on official documentation: https://help.sumologic.com/docs/api/search-job/
+
+export interface SearchJobRequest {
+  query: string;
+  from: string;
+  to: string;
+  timeZone: string;
+  byReceiptTime?: boolean;
+  autoParsingMode?: 'AutoParse' | 'Manual';
+  requiresRawMessages?: boolean;
+}
+
+export interface SearchJobResponse {
+  id: string;
+  link: {
+    rel: string;
+    href: string;
+  };
+  warning?: string;
+}
+
+export interface HistogramBucket {
+  length: number;
+  count: number;
+  startTimestamp: number;
+}
+
+export interface UsageDetails {
+  dataScannedInBytes: number;
+}
+
+export interface SearchJobStatus {
+  state:
+    | 'NOT STARTED'
+    | 'GATHERING RESULTS'
+    | 'GATHERING RESULTS FROM SUBQUERIES'
+    | 'FORCE PAUSED'
+    | 'DONE GATHERING RESULTS'
+    | 'DONE GATHERING HISTOGRAM'
+    | 'CANCELLED';
+  messageCount: number;
+  recordCount: number;
+  warning?: string;
+  pendingErrors: string[];
+  pendingWarnings: string[];
+  histogramBuckets: HistogramBucket[];
+  usageDetails: UsageDetails;
+}
+
+export interface MessageField {
+  name: string;
+  fieldType: 'string' | 'long' | 'int' | 'double' | 'boolean';
+  keyField: boolean;
+}
+
+export interface LogMessage {
+  map: Record<string, string>;
+  _raw?: string;
+  response?: string;
+  [key: string]: string | Record<string, string> | undefined;
+}
+
+export interface SearchJobMessagesResponse {
+  warning?: string;
+  fields: MessageField[];
+  messages: LogMessage[];
+}
+
+export interface AggregationRecord {
+  map: Record<string, string | number>;
+}
+
+export interface SearchJobRecordsResponse {
+  warning?: string;
+  fields: MessageField[];
+  records: AggregationRecord[];
+}
+
+// Client configuration and authentication types
+export interface SumoLogicConfig {
+  endpoint: string;
+  accessId: string;
+  accessKey: string;
+  timeout?: number;
+}
+
+export interface SumoLogicError {
+  statusCode: number;
+  message: string;
+  error?: string;
+  response?: {
+    body: string;
+  };
+}
+
+// Legacy interface compatibility (for existing code)
 export interface IJob {
   status: number;
   id: string;
@@ -11,46 +108,36 @@ export interface IJob {
   message: string;
 }
 
-export interface IHistogramBucket {
-  length: number;
-  count: number;
-  startTimestamp: number;
-}
-
-// Neither structure is specified at
-// https://help.sumologic.com/APIs/02Search_Job_API/About_the_Search_Job_API
-export type Error = any;
-export type Warning = any;
+export type IHistogramBucket = HistogramBucket;
 
 export interface IStatus {
-  state: string;
+  state: string; // Legacy compatibility - allow any string
   messageCount: number;
-  histogramBuckets: IHistogramBucket[];
-  pendingErrors: Error[];
-  pendingWarnings: Warning[];
   recordCount: number;
+  warning?: string;
+  pendingErrors: string[];
+  pendingWarnings: string[];
+  histogramBuckets: IHistogramBucket[];
+  usageDetails: UsageDetails;
 }
 
 export interface IField {
   name: string;
-  fieldType: string;
+  fieldType: string; // Legacy compatibility - allow any string
   keyField: boolean;
 }
 
-export interface IMessage {
-  map: { [key: string]: string };
-}
+export type IMessage = LogMessage;
 
-export interface IMessages {
-  fields: IField[];
-  messages: IMessage[];
-}
+export type IMessages = SearchJobMessagesResponse;
 
 export interface IRecords {
-  fields: IField[];
-  records: IMessage[];
+  warning?: string;
+  fields: MessageField[];
+  records: IMessage[]; // Legacy compatibility
 }
 
+// HTTP client types
 export type HttpClient = RequestAPI<
   RequestPromise,
   RequestPromiseOptions,
@@ -63,16 +150,11 @@ export interface IClientOptions {
   sumoApiKey: string;
 }
 
-export interface IJobOptions {
-  query: string;
-  from: string;
-  to: string;
-  timeZone: string;
-}
+export type IJobOptions = SearchJobRequest;
 
 export interface IHttpCallOptions {
   url?: string;
-  body?: any;
+  body?: Record<string, unknown> | IJobOptions;
 }
 
 export interface IPaginationOptions {
@@ -81,3 +163,29 @@ export interface IPaginationOptions {
 }
 
 export type HttpClientOptions = Options;
+
+// Search result types for our domain layer
+export interface SearchResult {
+  messages: ProcessedMessage[];
+}
+
+export interface ProcessedMessage {
+  map?: Record<string, string>;
+  _messageId?: string;
+  _sourceId?: string;
+  _sourceName?: string;
+  _sourceHost?: string;
+  _sourceCategory?: string;
+  _format?: string;
+  _size?: string;
+  _messageTime?: string;
+  _receiptTime?: string;
+  _messageCount?: string;
+  _raw?: string;
+  _source?: string;
+  _collectorId?: string;
+  _collector?: string;
+  _blockId?: string;
+  response?: string;
+  [key: string]: string | Record<string, string> | undefined;
+}

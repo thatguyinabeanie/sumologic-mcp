@@ -48,11 +48,11 @@ server.tool(
       );
 
       // Safely stringify the results, handling potential circular references
-      const safeStringify = (obj: any) => {
+      const safeStringify = (obj: unknown) => {
         const seen = new WeakSet();
         return JSON.stringify(
           obj,
-          (key, value) => {
+          (_key, value) => {
             if (typeof value === 'object' && value !== null) {
               if (seen.has(value)) {
                 return '[Circular Reference]';
