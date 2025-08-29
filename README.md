@@ -25,7 +25,7 @@ This is the recommended way to run the server.
     Create a `.env` file in the project root and add your Sumo Logic credentials:
 
     ```env
-    SUMO_ENDPOINT=https://api.us2.sumologic.com/api/v1
+    SUMO_ENDPOINT=https://api.au.sumologic.com/api/v1
     SUMO_ACCESS_ID=your_access_id
     SUMO_ACCESS_KEY=your_access_key
     ```
