@@ -19,6 +19,7 @@ export async function search(
   client: Sumo.Client,
   query: string,
   timeRange?: { from?: string; to?: string },
+  timeZone?: string,
 ): Promise<SearchResult> {
   const now = moment();
   const defaultTimeRange = {
@@ -33,7 +34,7 @@ export async function search(
     query,
     from,
     to,
-    timeZone: 'Asia/Hong_Kong',
+    timeZone: timeZone || process.env.TZ || 'UTC',
   };
 
   try {

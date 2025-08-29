@@ -5,7 +5,8 @@ services:
       args:
         - SUMO_ENDPOINT=${SUMO_ENDPOINT}
         - SUMO_ACCESS_ID=${SUMO_ACCESS_ID}
-        - SUMO_ACCESS_KEY=${SUMO_ACCESS_KEY}
+      - SUMO_ACCESS_KEY=${SUMO_ACCESS_KEY}
+      - TZ=${TZ:-UTC}
     stdin_open: true
     tty: true
     image: mcp-sumologic

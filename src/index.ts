@@ -34,12 +34,18 @@ server.tool(
     query: z.string(),
     from: z.string().optional(),
     to: z.string().optional(),
+    timeZone: z.string().optional(),
   },
-  async ({ query, from, to }) => {
+  async ({ query, from, to, timeZone }) => {
     try {
       // remove any new lines in the query
       const cleanedQuery = query.replace(/\n/g, '');
-      const results = await search(sumoClient, cleanedQuery, { from, to });
+      const results = await search(
+        sumoClient,
+        cleanedQuery,
+        { from, to },
+        timeZone,
+      );
 
       // Safely stringify the results, handling potential circular references
       const safeStringify = (obj: any) => {
