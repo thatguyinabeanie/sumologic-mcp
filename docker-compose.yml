@@ -1,0 +1,13 @@
+services:
+  mcp-sumologic:
+    build:
+      context: .
+      args:
+        - SUMO_ENDPOINT=${SUMO_ENDPOINT}
+        - SUMO_ACCESS_ID=${SUMO_ACCESS_ID}
+        - SUMO_ACCESS_KEY=${SUMO_ACCESS_KEY}
+    image: mcp-sumologic
+    environment:
+      - SUMO_ENDPOINT=${SUMO_ENDPOINT}
+      - SUMO_ACCESS_ID=${SUMO_ACCESS_ID}
+      - SUMO_ACCESS_KEY=${SUMO_ACCESS_KEY}

@@ -1,17 +1,23 @@
-import { config } from 'dotenv';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { search } from '@/domains/sumologic/client.js';
 import * as Sumo from '@/lib/sumologic/client.js';
 
-// Load environment variables from .env file
-config();
+// Check for required environment variables
+const { SUMO_ENDPOINT, SUMO_ACCESS_ID, SUMO_ACCESS_KEY } = process.env;
+
+if (!SUMO_ENDPOINT || !SUMO_ACCESS_ID || !SUMO_ACCESS_KEY) {
+  console.error(
+    'Error: Missing required environment variables. Please set SUMO_ENDPOINT, SUMO_ACCESS_ID, and SUMO_ACCESS_KEY.',
+  );
+  process.exit(1);
+}
 
 const sumoClient = Sumo.client({
-  endpoint: process.env.ENDPOINT || '',
-  sumoApiId: process.env.SUMO_API_ID || '',
-  sumoApiKey: process.env.SUMO_API_KEY || '',
+  endpoint: SUMO_ENDPOINT,
+  sumoApiId: SUMO_ACCESS_ID,
+  sumoApiKey: SUMO_ACCESS_KEY,
 });
 
 // Create an MCP server

@@ -9,8 +9,9 @@ COPY package*.json ./
 # Install dependencies including dev dependencies
 RUN npm ci
 
-# Copy source code
-COPY . .
+# Copy source code and configuration files
+COPY tsconfig.json ./
+COPY src/ ./src/
 
 # Build the application
 RUN npm run build
@@ -30,10 +31,6 @@ RUN npm pkg delete scripts.prepare && \
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
 
-# Copy .env file if it exists
-COPY --from=builder /app/.env ./.env
-
-# Set environment variables
 ENV NODE_ENV=production
 
 # Start the application

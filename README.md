@@ -9,66 +9,45 @@ A Model Context Protocol (MCP) server that integrates with Sumo Logic's API to p
 - Error handling and detailed logging
 - Docker support for easy deployment
 
-## Environment Variables
+## Getting Started with Docker
 
-```env
-ENDPOINT=https://api.au.sumologic.com/api/v1  # Sumo Logic API endpoint
-SUMO_API_ID=your_api_id                       # Sumo Logic API ID
-SUMO_API_KEY=your_api_key                     # Sumo Logic API Key
-```
+This is the recommended way to run the server.
 
-## Setup
+1.  **Clone the repository:**
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create a `.env` file with the required environment variables
-4. Build the project:
-   ```bash
-   npm run build
-   ```
-5. Start the server:
-   ```bash
-   npm start
-   ```
+    ```bash
+    git clone <repository-url>
+    cd mcp-sumologic
+    ```
 
-## Docker Setup
+2.  **Configure Environment Variables:**
 
-1. Build the Docker image:
-   ```bash
-   docker build -t mcp/sumologic .
-   ```
+    Create a `.env` file in the project root and add your Sumo Logic credentials:
 
-2. Run the container (choose one method):
+    ```env
+    SUMO_ENDPOINT=https://api.us2.sumologic.com/api/v1
+    SUMO_ACCESS_ID=your_access_id
+    SUMO_ACCESS_KEY=your_access_key
+    ```
 
-   a. Using environment variables directly:
-   ```bash
-   docker run -e ENDPOINT=your_endpoint -e SUMO_API_ID=your_api_id -e SUMO_API_KEY=your_api_key mcp/sumologic
-   ```
+    The `docker-compose.yml` file is configured to automatically load this file.
 
-   b. Using a .env file:
-   ```bash
-   docker run --env-file .env mcp/sumologic
-   ```
-
-   Note: Make sure your .env file contains the required environment variables:
-   ```env
-   ENDPOINT=your_endpoint
-   SUMO_API_ID=your_api_id
-   SUMO_API_KEY=your_api_key
-   ```
+3.  **Build and Run the Container:**
+    ```bash
+    docker-compose up --build
+    ```
+    The server will start, and you can see the logs in your terminal.
 
 ## Usage
 
 The server exposes a `search-sumologic` tool that accepts the following parameters:
 
-- `query` (required): The Sumo Logic search query
-- `from` (optional): Start time in ISO 8601 format
-- `to` (optional): End time in ISO 8601 format
+- `query` (required): The Sumo Logic search query.
+- `from` (optional): Start time in ISO 8601 format.
+- `to` (optional): End time in ISO 8601 format.
 
 Example query:
+
 ```typescript
 const query = '_index=app_pro_fiat_cont | json auto | fields log_identifier';
 const results = await search(sumoClient, query, {
@@ -77,21 +56,26 @@ const results = await search(sumoClient, query, {
 });
 ```
 
-## Error Handling
+## Local Development
 
-The server includes comprehensive error handling and logging:
-- API errors are caught and logged with details
-- Search job status is monitored and logged
-- Network and authentication issues are properly handled
+If you prefer to run the server locally without Docker:
 
-## Development
+1.  **Install Dependencies:**
 
-To run in development mode:
-```bash
-npm run dev
-```
+    ```bash
+    npm install
+    ```
 
-For testing:
-```bash
-npm test
-``` 
+2.  **Set Environment Variables:**
+    Export the `SUMO_ENDPOINT`, `SUMO_ACCESS_ID`, and `SUMO_ACCESS_KEY` environment variables in your shell.
+
+3.  **Run in Development Mode:**
+
+    ```bash
+    npm run dev
+    ```
+
+4.  **Run Tests:**
+    ```bash
+    npm test
+    ```
