@@ -43,50 +43,47 @@ export function maskSensitiveInfo(text: string): string {
     /\b(?:\d[ -]*?){13,16}\b/g,
   ];
 
-  // Phone number patterns (various formats)
+  // Phone number patterns (various formats) - Order matters: most specific first
   const phonePatterns = [
-    // International formats with + country code (covers +528008770427, +61468613312, etc.)
-    /\b\+\d{1,4}[ .-]?\d{1,14}(?:[ .-]?\d{1,14})*\b/g,
+    // International formats with + country code and parentheses (covers +44 (0) 7876163246)
+    /\+\d{1,4}\s*\(\d{1,4}\)\s*\d{4,15}/g,
 
-    // International formats with + and parentheses (covers +44 (0) 7876163246)
-    /\b\+\d{1,4}[ .-]?\(\d{1,4}\)[ .-]?\d{1,14}(?:[ .-]?\d{1,14})*\b/g,
+    // US format with parentheses (123) 456-7890
+    /\(\d{3}\)\s*\d{3}[.-]?\d{4}/g,
+
+    // International formats with + country code (covers +528008770427, +61468613312, etc.)
+    /\+\d{1,4}[\s.-]?\d{1,4}[\s.-]?\d{4,15}/g,
+
+    // US/Canada formats 800-555-1234, 123-456-7890
+    /\d{3}[.-]\d{3}[.-]\d{4}/g,
 
     // Numbers with slashes (like +971 4 5096466/96/86)
-    /\b\+\d{1,4}[ .-]?\d{1,4}[ .-]?\d{1,14}(?:\/\d{1,4})+\b/g,
+    /\+\d{1,4}[\s.-]?\d{1,4}[\s.-]?\d{1,14}(?:\/\d{1,4})+/g,
 
     // US/Canada with country code 1 (without +)
-    /\b1[ .-]?\(?\d{3}\)?[ .-]?\d{3}[ .-]?\d{4}\b/g,
-
-    // Common US formats (like 833-376-1995, 304-513-3153)
-    /\b\d{3}[.-]?\d{3}[.-]?\d{4}\b/g,
+    /\b1[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/g,
 
     // Additional patterns to catch more formats:
 
     // International numbers with spaces and no plus (like 44 20 3051 303)
-    /\b\d{1,4}[ ]\d{1,4}[ ]\d{1,4}[ ]\d{1,4}\b/g,
+    /\b\d{1,4}\s\d{1,4}\s\d{1,4}\s\d{1,4}\b/g,
 
     // Numbers with multiple slashes or extensions (like 5096466/96/86)
     /\b\d{6,10}(?:\/\d{1,4}){1,5}\b/g,
 
-    // Numbers with parentheses and spaces (like (866) 687-3722)
-    /\b\(\d{3}\)[ .-]?\d{3}[ .-]?\d{4}\b/g,
-
     // Numbers with plus and multiple groups (like +44 7867 254482)
-    /\b\+\d{1,4}[ ]\d{4}[ ]\d{6}\b/g,
+    /\+\d{1,4}\s\d{4}\s\d{6}/g,
 
     // Numbers with country code and area code in parentheses (like +1(123)456-7890)
-    /\b\+\d{1,4}\(\d{3}\)\d{3}[-]?\d{4}\b/g,
-
-    // Numbers with multiple hyphens (like 123-456-7890)
-    /\b\d{3}[-]\d{3}[-]\d{4}\b/g,
+    /\+\d{1,4}\(\d{3}\)\d{3}[-]?\d{4}/g,
 
     // International numbers with specific formats seen in the data
-    /\b\+\d{1,4}[ ]?\d{1,4}[ ]?\d{4}[ ]?\d{4}\b/g,
+    /\+\d{1,4}\s?\d{1,4}\s?\d{4}\s?\d{4}/g,
 
     // Specific formats from the JSON data
-    /\b\+[0-9]{10,15}\b/g, // Simple international numbers like +528008770427
-    /\b\+\d{1,4}[ ]?\d{1,4}[ ]?\d{1,4}[ ]?\d{1,4}\b/g, // Format like +971 4 5096466
-    /\b\d{1,4}[ -]?\d{1,4}[ -]?\d{1,4}[ -]?\d{1,4}\b/g, // Generic number pattern with spaces or hyphens
+    /\+[0-9]{10,15}/g, // Simple international numbers like +528008770427
+    /\+\d{1,4}\s?\d{1,4}\s?\d{1,4}\s?\d{1,4}/g, // Format like +971 4 5096466
+    /\b\d{1,4}[\s-]?\d{1,4}[\s-]?\d{1,4}[\s-]?\d{1,4}\b/g, // Generic number pattern with spaces or hyphens
   ];
 
   // Address patterns
@@ -117,9 +114,12 @@ export function maskSensitiveInfo(text: string): string {
     maskedText = maskedText.replace(pattern, '[CARD NUMBER REDACTED]');
   });
 
+  // Mask SSNs BEFORE phone numbers to avoid conflicts
+  maskedText = maskedText.replace(ssnPattern, '[SSN REDACTED]');
+
   // Mask phone numbers
   phonePatterns.forEach((pattern) => {
-    maskedText = maskedText.replace(pattern, (match, offset, string) => {
+    maskedText = maskedText.replace(pattern, (match, _offset, string) => {
       // Skip masking if the match is part of a URL
       if (isPartOfUrl(match, string)) {
         return match;
@@ -134,7 +134,7 @@ export function maskSensitiveInfo(text: string): string {
   while (previousMaskedText !== maskedText) {
     previousMaskedText = maskedText;
     phonePatterns.forEach((pattern) => {
-      maskedText = maskedText.replace(pattern, (match, offset, string) => {
+      maskedText = maskedText.replace(pattern, (match, _offset, string) => {
         // Skip masking if the match is part of a URL
         if (isPartOfUrl(match, string)) {
           return match;
@@ -148,9 +148,6 @@ export function maskSensitiveInfo(text: string): string {
   addressPatterns.forEach((pattern) => {
     maskedText = maskedText.replace(pattern, '[ADDRESS REDACTED]');
   });
-
-  // Mask SSNs
-  maskedText = maskedText.replace(ssnPattern, '[SSN REDACTED]');
 
   return maskedText;
 }
