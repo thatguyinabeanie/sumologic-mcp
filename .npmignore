@@ -1,0 +1,16 @@
+src/
+tsconfig.json
+.env*
+*.test.js
+*.spec.js
+coverage/
+.git/
+.github/
+node_modules/
+*.log
+.prettierrc
+.eslintrc.js
+jest.config.js
+Makefile
+docker-compose.yml
+Dockerfile
