@@ -1,0 +1,91 @@
+name: Publish to NPM
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get package version
+        id: package-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Get release tag version
+        id: release-version
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          # Remove 'v' prefix if present (handle both vX.Y.Z and X.Y.Z)
+          VERSION=${TAG_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Verify version match
+        run: |
+          PACKAGE_VERSION="${{ steps.package-version.outputs.version }}"
+          RELEASE_VERSION="${{ steps.release-version.outputs.version }}"
+
+          if [ "$PACKAGE_VERSION" != "$RELEASE_VERSION" ]; then
+            echo "Error: package.json version ($PACKAGE_VERSION) does not match release tag ($RELEASE_VERSION)"
+            exit 1
+          else
+            echo "Version match confirmed: $PACKAGE_VERSION"
+          fi
+
+      - name: Check if version exists on npm
+        id: check-version
+        run: |
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          VERSION=${{ steps.release-version.outputs.version }}
+
+          if npm view "$PACKAGE_NAME@$VERSION" version 2>/dev/null; then
+            echo "Version $VERSION already exists on npm"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Version $VERSION does not exist on npm, proceeding with publish"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Exit if version exists
+        if: steps.check-version.outputs.exists == 'true'
+        run: |
+          echo "Package version ${{ steps.release-version.outputs.version }} already exists on npm. Skipping publish."
+          exit 1
+
+      - name: Run tests
+        if: steps.check-version.outputs.exists == 'false'
+        run: npm test
+
+      - name: Run linter
+        if: steps.check-version.outputs.exists == 'false'
+        run: npm run lint
+
+      - name: Check formatting
+        if: steps.check-version.outputs.exists == 'false'
+        run: npm run format:check
+
+      - name: Build project
+        if: steps.check-version.outputs.exists == 'false'
+        run: npm run build
+
+      - name: Publish to npm
+        if: steps.check-version.outputs.exists == 'false'
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

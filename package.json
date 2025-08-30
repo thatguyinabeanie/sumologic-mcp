@@ -1,6 +1,6 @@
 {
-  "name": "mcp-sumologic",
-  "version": "1.0.1",
+  "name": "@thatguyinabeanie/mcp-sumologic",
+  "version": "0.1.0",
   "description": "MCP server for sumologic query",
   "main": "dist/index.js",
   "type": "module",
